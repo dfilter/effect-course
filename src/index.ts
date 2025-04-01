@@ -9,7 +9,7 @@ const fetchRequest = Effect.tryPromise({
     if (Math.random() < 0.25) {
       throw new Error();
     }
-    return fetch("https://pokeapi.co/api/v2/psadokemon/garchomp/");
+    return fetch("https://pokeapi.co/api/v2/pokemon/garchomp/");
   },
   catch: () => new FetchError(),
 });
