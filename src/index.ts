@@ -40,18 +40,14 @@ const savePokemon = (pokemon: unknown) =>
     () => new Promise((resolve) => setTimeout(() => resolve(pokemon), 500))
   );
 
-const main = fetchRequest.pipe(
-  Effect.filterOrFail(
-    (response) => response.ok,
-    () => new FetchError()
-  ),
-  Effect.flatMap(jsonResponse),
-  // Catch multiple tags with catchTags.
-  Effect.catchTags({
-    FetchError: () => Effect.succeed<string>("Fetch error"),
-    JsonError: () => Effect.succeed<string>("Json error"),
-  })
-);
+const main = Effect.gen(function* () {
+  const response = yield* fetchRequest;
+  if (!response.ok) {
+    return yield* new FetchError();
+  }
+
+  return yield* jsonResponse(response);
+});
 
 Effect.runPromise(main)
   .then((json) => console.log(json))
