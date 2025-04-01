@@ -1,8 +1,16 @@
-import { Data, Effect } from "effect";
+import { Data, Effect, Schema } from "effect";
 
 class FetchError extends Data.TaggedError("FetchError")<{}> {}
 
 class JsonError extends Data.TaggedError("JsonError")<{}> {}
+
+const Pokemon = Schema.Struct({
+  id: Schema.Number,
+  order: Schema.Number,
+  name: Schema.String,
+  height: Schema.Number,
+  weight: Schema.Number,
+});
 
 const fetchRequest = Effect.tryPromise({
   try: () => {
