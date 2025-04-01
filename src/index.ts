@@ -1,13 +1,5 @@
 import { Data, Effect } from "effect";
 
-interface FetchError {
-  readonly _tag: "FetchError";
-}
-
-interface JsonError {
-  readonly _tag: "JsonError";
-}
-
 class FetchError extends Data.TaggedError("FetchError")<{}> {}
 
 class JsonError extends Data.TaggedError("JsonError")<{}> {}
@@ -16,9 +8,8 @@ const fetchRequest = Effect.tryPromise({
   try: () => {
     if (Math.random() < 0.25) {
       throw new Error();
-    } else {
-      return fetch("https://pokeapi.co/api/v2/psadokemon/garchomp/");
     }
+    return fetch("https://pokeapi.co/api/v2/psadokemon/garchomp/");
   },
   catch: () => new FetchError(),
 });
@@ -28,9 +19,8 @@ const jsonResponse = (response: Response) =>
     try: () => {
       if (Math.random() < 0.25) {
         throw new Error();
-      } else {
-        return response.json();
       }
+      return response.json();
     },
     catch: () => new JsonError(),
   });
@@ -40,7 +30,7 @@ const savePokemon = (pokemon: unknown) =>
     () => new Promise((resolve) => setTimeout(() => resolve(pokemon), 500))
   );
 
-const main = Effect.gen(function* () {
+const program = Effect.gen(function* () {
   const response = yield* fetchRequest;
   if (!response.ok) {
     return yield* new FetchError();
@@ -48,6 +38,13 @@ const main = Effect.gen(function* () {
 
   return yield* jsonResponse(response);
 });
+
+const main = program.pipe(
+  Effect.catchTags({
+    FetchError: () => Effect.succeed("Fetch error"),
+    JsonError: () => Effect.succeed("Json error"),
+  })
+);
 
 Effect.runPromise(main)
   .then((json) => console.log(json))
