@@ -1,16 +1,34 @@
 import { Effect, pipe } from "effect";
 
-const fetchRequest = Effect.tryPromise(() =>
-  fetch("https://pokeapi.co/api/v2/pokemon/garchomp/")
-);
+interface FetchError {
+  readonly _tag: "FetchError";
+}
 
-const jsonResponse = (response: Response) =>
-  Effect.tryPromise(() => {
-    if (Math.random() < 0.5) {
+interface JSONParseError {
+  readonly _tag: "JSONParseError";
+}
+
+const fetchRequest = Effect.tryPromise({
+  try: () => {
+    if (Math.random() < 0.25) {
       throw new Error();
     } else {
-      return response.json();
+      return fetch("https://pokeapi.co/api/v2/psadokemon/garchomp/");
     }
+  },
+  catch: (): FetchError => ({ _tag: "FetchError" }),
+});
+
+const jsonResponse = (response: Response) =>
+  Effect.tryPromise({
+    try: () => {
+      if (Math.random() < 0.25) {
+        throw new Error();
+      } else {
+        return response.json();
+      }
+    },
+    catch: (): JSONParseError => ({ _tag: "JSONParseError" }),
   });
 
 const savePokemon = (pokemon: unknown) =>
@@ -20,12 +38,16 @@ const savePokemon = (pokemon: unknown) =>
 
 const main = fetchRequest.pipe(
   Effect.flatMap(jsonResponse),
-  // Allows catching of a SINGLE error
-  Effect.catchTag("UnknownException", () =>
-    Effect.succeed<string>("There was an error")
+  // Allows handling of a SINGLE error in this case an error while fetching.
+  Effect.catchTag("FetchError", () =>
+    Effect.succeed<string>("There was ane error fetching data.")
+  ),
+  // handles the JSONParseError.
+  Effect.catchTag("JSONParseError", () =>
+    Effect.succeed<string>("There was a parsing error.")
   )
 );
 
 Effect.runPromise(main)
   .then((json) => console.log(json))
-  .catch((thing) => console.log(thing));
+  .catch((error) => console.error(error));
