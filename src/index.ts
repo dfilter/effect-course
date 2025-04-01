@@ -38,14 +38,12 @@ const savePokemon = (pokemon: unknown) =>
 
 const main = fetchRequest.pipe(
   Effect.flatMap(jsonResponse),
-  // Allows handling of a SINGLE error in this case an error while fetching.
-  Effect.catchTag("FetchError", () =>
-    Effect.succeed<string>("There was ane error fetching data.")
-  ),
-  // handles the JSONParseError.
-  Effect.catchTag("JSONParseError", () =>
-    Effect.succeed<string>("There was a parsing error.")
-  )
+  // Catch multiple tags with catchTags.
+  Effect.catchTags({
+    FetchError: () =>
+      Effect.succeed<string>("There was ane error fetching data."),
+    JSONParseError: () => Effect.succeed<string>("There was a parsing error."),
+  })
 );
 
 Effect.runPromise(main)
