@@ -1,10 +1,10 @@
 import { Effect, pipe } from "effect";
 
-interface FetchError {
+interface FetchError extends Error {
   readonly _tag: "FetchError";
 }
 
-interface JSONParseError {
+interface JSONParseError extends Error {
   readonly _tag: "JSONParseError";
 }
 
@@ -16,7 +16,11 @@ const fetchRequest = Effect.tryPromise({
       return fetch("https://pokeapi.co/api/v2/psadokemon/garchomp/");
     }
   },
-  catch: (): FetchError => ({ _tag: "FetchError" }),
+  catch: (): FetchError => ({
+    _tag: "FetchError",
+    name: "FetchError",
+    message: "An error occurred while fetching Pokemon.",
+  }),
 });
 
 const jsonResponse = (response: Response) =>
@@ -28,7 +32,11 @@ const jsonResponse = (response: Response) =>
         return response.json();
       }
     },
-    catch: (): JSONParseError => ({ _tag: "JSONParseError" }),
+    catch: (): JSONParseError => ({
+      _tag: "JSONParseError",
+      name: "JSONParseError",
+      message: "An error occurred while parsing the pokemon response.",
+    }),
   });
 
 const savePokemon = (pokemon: unknown) =>
@@ -40,9 +48,8 @@ const main = fetchRequest.pipe(
   Effect.flatMap(jsonResponse),
   // Catch multiple tags with catchTags.
   Effect.catchTags({
-    FetchError: () =>
-      Effect.succeed<string>("There was ane error fetching data."),
-    JSONParseError: () => Effect.succeed<string>("There was a parsing error."),
+    FetchError: (error) => Effect.succeed<string>(error.message),
+    JSONParseError: (error) => Effect.succeed<string>(error.message),
   })
 );
 
