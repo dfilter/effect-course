@@ -4,32 +4,33 @@ import { Pokemon } from "./schemas";
 import { PokemonCollection } from "./PokemonCollection";
 import { BuildPokeApiUrl } from "./BuildPokeApiUrl";
 
-const make = {
-  getPokemon: Effect.gen(function* () {
-    const pokemonCollection = yield* PokemonCollection;
-    const buildPokeApiUrl = yield* BuildPokeApiUrl;
+const make = Effect.gen(function* () {
+  /// 1️⃣ Extract `PokemonCollection` and `BuildPokeApiUrl` outside of `getPokemon`
+  const pokemonCollection = yield* PokemonCollection;
+  const buildPokeApiUrl = yield* BuildPokeApiUrl;
 
-    const requestUrl = buildPokeApiUrl({
-      name: pokemonCollection[0],
-    });
+  return {
+    getPokemon: Effect.gen(function* () {
+      const requestUrl = buildPokeApiUrl({ name: pokemonCollection[0] });
 
-    const response = yield* Effect.tryPromise({
-      try: () => fetch(requestUrl),
-      catch: () => new FetchError(),
-    });
+      const response = yield* Effect.tryPromise({
+        try: () => fetch(requestUrl),
+        catch: () => new FetchError(),
+      });
 
-    if (!response.ok) {
-      return yield* new FetchError();
-    }
+      if (!response.ok) {
+        return yield* new FetchError();
+      }
 
-    const json = yield* Effect.tryPromise({
-      try: () => response.json(),
-      catch: () => new JsonError(),
-    });
+      const json = yield* Effect.tryPromise({
+        try: () => response.json(),
+        catch: () => new JsonError(),
+      });
 
-    return yield* Schema.decodeUnknown(Pokemon)(json);
-  }),
-};
+      return yield* Schema.decodeUnknown(Pokemon)(json);
+    }),
+  };
+});
 
 const test = {
   getPokemon: Effect.succeed(
@@ -37,8 +38,15 @@ const test = {
   ),
 };
 
-export class PokeApi extends Context.Tag("PokeApi")<PokeApi, typeof make>() {
-  static readonly Live = Layer.succeed(this, make);
+export class PokeApi extends Context.Tag("PokeApi")<
+  PokeApi,
+  /// 2️⃣ Change the definition of the service to `Effect.Effect.Success<typeof make>`
+  Effect.Effect.Success<typeof make>
+>() {
+  /// 3️⃣ Use `Layer.effect` instead of `Layer.succeed`
+  static readonly Live = Layer.effect(this, make).pipe(
+    Layer.provide(Layer.mergeAll(PokemonCollection.Live, BuildPokeApiUrl.Live))
+  );
 
   static readonly Test = Layer.succeed(this, test);
 }
