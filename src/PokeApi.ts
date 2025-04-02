@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { FetchError, JsonError } from "./errors";
 import { Pokemon } from "./schemas";
 import { PokemonCollection } from "./PokemonCollection";
