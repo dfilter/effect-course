@@ -1,5 +1,9 @@
 import { Config, Context, Effect, Layer } from "effect";
 
+/**
+ * Since PokeApiUrl returns a string one can't use a Effect.Service.
+ * Effect.Service requires an object to be returned
+ */
 export class PokeApiUrl extends Context.Tag("PokeApiUrl")<
   PokeApiUrl,
   string
