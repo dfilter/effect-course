@@ -1,16 +1,16 @@
-import { Effect, Layer } from "effect";
+import { Effect, Layer, ManagedRuntime } from "effect";
 import { PokeApi } from "./PokeApi";
 
-// const MainLayer = Layer.mergeAll(PokeApi.Default);
+const MainLayer = Layer.mergeAll(PokeApi.Default);
+
+const PokemonRuntime = ManagedRuntime.make(MainLayer);
 
 export const program = Effect.gen(function* () {
   const pokeApi = yield* PokeApi;
   return yield* pokeApi.getPokemon;
 });
 
-const runnable = program.pipe(Effect.provide(PokeApi.Default));
-
-const main = runnable.pipe(
+const main = program.pipe(
   Effect.catchTags({
     FetchError: () => Effect.succeed("Fetch error"),
     JsonError: () => Effect.succeed("Json error"),
@@ -18,4 +18,4 @@ const main = runnable.pipe(
   })
 );
 
-Effect.runPromise(main).then(console.log);
+PokemonRuntime.runPromise(main).then(console.log);
