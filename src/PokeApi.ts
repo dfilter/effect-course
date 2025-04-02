@@ -1,4 +1,4 @@
-import { Context, Effect, Schema } from "effect";
+import { Context, Effect, Layer, Schema } from "effect";
 import { FetchError, JsonError } from "./errors";
 import { Pokemon } from "./schemas";
 import { PokemonCollection } from "./PokemonCollection";
@@ -31,12 +31,14 @@ const make = {
   }),
 };
 
-export class PokeApi extends Context.Tag("PokeApi")<PokeApi, typeof make>() {
-  static readonly Live = PokeApi.of(make);
+const test = {
+  getPokemon: Effect.succeed(
+    new Pokemon({ id: 1, order: 1, name: "myname", height: 10, weight: 10 })
+  ),
+};
 
-  static readonly Test = PokeApi.of({
-    getPokemon: Effect.succeed(
-      new Pokemon({ id: 1, order: 1, name: "myname", height: 10, weight: 10 })
-    ),
-  });
+export class PokeApi extends Context.Tag("PokeApi")<PokeApi, typeof make>() {
+  static readonly Live = Layer.succeed(this, make);
+
+  static readonly Test = Layer.succeed(this, test);
 }
